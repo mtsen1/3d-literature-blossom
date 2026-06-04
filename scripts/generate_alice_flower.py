@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 def generate_highly_defined_petal(center_angle, length, width_scale, tip_curl, ripple_freq, tilt_angle, is_inner_tier, micro_lift, radial_offset):
     """
@@ -100,14 +101,14 @@ def add_stamen_cluster(fig, count=18, max_height=1.15):
             mode='lines',
             line=dict(color="#fdfaa7", width=3.5), 
             showlegend=False, hoverinfo='skip'
-        ))
+        ), row=1, col=1)
         
         fig.add_trace(go.Scatter3d(
             x=x_bead, y=y_bead, z=z_bead,
             mode='lines',
             line=dict(color="#ffca6e", width=6), 
             showlegend=False, hoverinfo='skip'
-        ))
+        ), row=1, col=1)
 
 def get_sentiment_color(val):
     if val < 0.2: return "#bde0fe"   
@@ -115,9 +116,6 @@ def get_sentiment_color(val):
     elif val < 0.6: return "#c8b6ff" 
     elif val < 0.8: return "#fecefe" 
     else: return "#fcb6cf"          
-
-def get_darkened_shadow_root(pastel_hex):
-    return "#ffffff"
 
 def create_hover_text(row, chapter_num, matrix_shape):
     words = int(row['word_count'])
@@ -153,12 +151,13 @@ def generate_stem_and_sepal():
     return X_stem, Y_stem, Z_stem, X_sepal, Y_sepal, Z_sepal
 
 # ==============================================================================
-# CONFIGURATION: SWAP YOUR BOOK TOGGLE HERE
+# CONFIGURATION & SUBPLOT SETUP
 # ==============================================================================
-BOOK_ID = "alice_in_wonderland"  # Options: 'alice' or 'the_secret_garden'
+BOOK_ID = "jekyll_and_hyde"  # Options: 'alice_in_wonderland', 'jekyll_and_hyde', etc.
 
 df = pd.read_csv(f'data/{BOOK_ID}_petals.csv')
 total_chapters = len(df)
+df['chapter_index'] = df.index + 1  # Standard 1-based index for clean charting axes
 
 # --- Feature Scaling Calibrations ---
 min_words, max_words = df['word_count'].min(), df['word_count'].max()
@@ -172,14 +171,27 @@ df['color_val'] = (df['sentiment_polarity'] - min_sent) / (max_sent - min_sent)
 
 max_abs_sentiment = max(abs(min_sent), abs(max_sent))
 df['scaled_curl'] = -(df['sentiment_polarity'] / max_abs_sentiment) * 0.35
+df['punctuation_count'] = (df['punctuation_count'] / df['word_count']) * 100
 df['ripple_freq'] = 6 + (df['punctuation_count'] / df['punctuation_count'].max() * 14)
 
-# Initialize staging grounds
-fig = go.Figure()
+# Instantiate the Multi-Row Canvas Environment
+fig = make_subplots(
+    rows=5, cols=1,
+    shared_xaxes=False,
+    vertical_spacing=0.04,
+    row_heights=[0.48, 0.13, 0.13, 0.13, 0.13],
+    specs=[
+        [{"type": "scene"}],  # Row 1: The 3D Topology Mesh Workspace
+        [{"type": "xy"}],     # Row 2: Word Count Area Curve
+        [{"type": "xy"}],     # Row 3: Lexical Diversity Line Matrix
+        [{"type": "xy"}],     # Row 4: Sentiment Bars
+        [{"type": "xy"}]      # Row 5: Punctuation Steps
+    ]
+)
 
 # Add Colorbar Legend
-fig.add_trace(go.Scatter(
-    x=[None], y=[None], mode='markers',
+fig.add_trace(go.Scatter3d(
+    x=[None], y=[None], z=[None], mode='markers', # Added a dummy z axis element here
     marker=dict(
         colorscale=[[0.0, '#bde0fe'], [0.25, '#b8c0ff'], [0.5, '#c8b6ff'], [0.75, '#fecefe'], [1.0, '#fcb6cf']],
         cmin=-1.0, cmax=1.0, color=[-1.0, 1.0], showscale=True,
@@ -187,95 +199,190 @@ fig.add_trace(go.Scatter(
             title=dict(text="Chapter Sentiment", side="top", font=dict(size=12, family='monospace', color='#334155')),
             tickvals=[-0.8, -0.4, 0.0, 0.4, 0.8],
             ticktext=["Somber", "Negative", "Neutral", "Positive", "Whimsical"],
-            thickness=16, len=0.45, x=0.92, y=0.5,
-            tickfont=dict(size=11, family='monospace', color='#334155')
+            thickness=15, len=0.35, x=0.94, y=0.74,
+            tickfont=dict(size=10, family='monospace', color='#334155')
         )
     ),
     hoverinfo='skip', showlegend=False
-))
+), row=1, col=1)
 
-# Render Stem & Sepal Base
+# Render Stem & Sepal Base directly into Row 1
 X_stem, Y_stem, Z_stem, X_sepal, Y_sepal, Z_sepal = generate_stem_and_sepal()
-fig.add_trace(go.Surface(x=X_stem, y=Y_stem, z=Z_stem, colorscale=[[0, "#86a172"], [1, "#8cab76"]], showscale=False, hoverinfo='skip', lighting=dict(ambient=0.90, diffuse=0.50, roughness=0.7)))
-fig.add_trace(go.Surface(x=X_sepal, y=Y_sepal, z=Z_sepal, colorscale=[[0, "#86a172"], [1, "#8cab76"]], showscale=False, hoverinfo='skip', lighting=dict(ambient=0.95, diffuse=0.40, roughness=0.8)))
+fig.add_trace(go.Surface(x=X_stem, y=Y_stem, z=Z_stem, colorscale=[[0, "#86a172"], [1, "#8cab76"]], showscale=False, hoverinfo='skip', lighting=dict(ambient=0.90, diffuse=0.50, roughness=0.7)), row=1, col=1)
+fig.add_trace(go.Surface(x=X_sepal, y=Y_sepal, z=Z_sepal, colorscale=[[0, "#86a172"], [1, "#8cab76"]], showscale=False, hoverinfo='skip', lighting=dict(ambient=0.95, diffuse=0.40, roughness=0.8)), row=1, col=1)
 add_stamen_cluster(fig, count=18, max_height=0.42)
 
 # ==============================================================================
-# DYNAMIC CONCENTRIC TIER DISTRIBUTION ENGINE
+# DYNAMIC MULTI-TIER DISTRIBUTION ENGINE (Row 1)
 # ==============================================================================
-if total_chapters < 12:
-    # Small texts fit entirely on one uniform ring
-    outer_count = total_chapters
-    inner_count = 0
+# Setup an array to hold all generated loops configurations
+tiers_to_render = []
+
+if total_chapters > 20:
+    # 🌟 NEW RULE: Split into 3 Concentric Layers to minimize crowding
+    outer_count = total_chapters // 3
+    mid_count = total_chapters // 3
+    inner_count = total_chapters - (outer_count + mid_count)
+    
+    # Stagger angular offsets to tuck petals naturally into lower-tier gaps
+    angles_outer = np.linspace(0, 2 * np.pi, outer_count, endpoint=False)
+    angles_mid = np.linspace(0, 2 * np.pi, mid_count, endpoint=False) + (np.pi / max(mid_count, 1))
+    angles_inner = np.linspace(0, 2 * np.pi, inner_count, endpoint=False) + (np.pi / max(inner_count, 1) * 0.5)
+    
+    tiers_to_render = [
+        {'count': outer_count, 'angles': angles_outer, 'is_inner': False, 'tilt': -0.18, 'lift_override': 0.0,  'len_mult': 1.15, 'wid_mult': 1.0},
+        {'count': mid_count,   'angles': angles_mid,   'is_inner': True,  'tilt': -0.08, 'lift_override': 0.28, 'len_mult': 0.88, 'wid_mult': 0.85},
+        {'count': inner_count, 'angles': angles_inner, 'is_inner': True,  'tilt': -0.02, 'lift_override': 0.54, 'len_mult': 0.68, 'wid_mult': 0.70}
+    ]
 else:
-    # Large texts are split evenly down the middle into dual concentric rings
-    outer_count = total_chapters // 2
-    inner_count = total_chapters - outer_count
+    # --- Fallback to original two-tier/one-tier logic for smaller texts ---
+    if total_chapters < 12:
+        outer_count = total_chapters
+        inner_count = 0
+    else:
+        outer_count = total_chapters // 2
+        inner_count = total_chapters - outer_count
 
-angles_outer = np.linspace(0, 2 * np.pi, outer_count, endpoint=False)
-angles_inner = np.linspace(0, 2 * np.pi, inner_count, endpoint=False) + (np.pi / max(inner_count, 1))
+    angles_outer = np.linspace(0, 2 * np.pi, outer_count, endpoint=False)
+    angles_inner = np.linspace(0, 2 * np.pi, inner_count, endpoint=False) + (np.pi / max(inner_count, 1))
+    
+    tiers_to_render = [
+        {'count': outer_count, 'angles': angles_outer, 'is_inner': False, 'tilt': -0.16, 'lift_override': None, 'len_mult': 1.0, 'wid_mult': 1.0},
+        {'count': inner_count, 'angles': angles_inner, 'is_inner': True,  'tilt': -0.04, 'lift_override': None, 'len_mult': 1.0, 'wid_mult': 1.0}
+    ]
 
-# --- LOOP 1: RENDER OUTER TIER ---
-for idx in range(outer_count):
-    row = df.iloc[idx]
-    is_even = (idx % 2 == 0)
-    X, Y, Z = generate_highly_defined_petal(
-        center_angle=angles_outer[idx], length=row['scaled_length'], width_scale=row['scaled_width'],
-        tip_curl=row['scaled_curl'], ripple_freq=row['ripple_freq'], tilt_angle=-0.16, 
-        is_inner_tier=False, micro_lift=(True if is_even else False), radial_offset=(0.15 if is_even else 0.0)
-    )
-    chapter_color = get_sentiment_color(row['color_val'])
-    fig.add_trace(go.Surface(
-        x=X, y=Y, z=Z, colorscale=[[0.0, "#ffffff"], [0.4, "#ffffff"], [0.8, chapter_color], [1.0, chapter_color]], 
-        showscale=False, lighting=dict(ambient=0.95, diffuse=0.40, roughness=0.8, specular=0.0),
-        text=create_hover_text(row, chapter_num=idx+1, matrix_shape=X.shape), hoverinfo='text'
-    ))
+# Global tracer tracking rows sequentially across data tier limits
+global_chapter_idx = 0
 
-# --- LOOP 2: RENDER INNER TIER ---
-for idx in range(inner_count):
-    row = df.iloc[idx + outer_count]
-    is_even = (idx % 2 == 0)
-    X, Y, Z = generate_highly_defined_petal(
-        center_angle=angles_inner[idx], length=row['scaled_length'], width_scale=row['scaled_width'],
-        tip_curl=row['scaled_curl'], ripple_freq=row['ripple_freq'], tilt_angle=-0.04, 
-        is_inner_tier=True, micro_lift=(True if is_even else False), radial_offset=(0.12 if is_even else 0.0)
-    )
-    chapter_color = get_sentiment_color(row['color_val'])
-    fig.add_trace(go.Surface(
-        x=X, y=Y, z=Z, colorscale=[[0.0, "#ffffff"], [0.4, "#ffffff"], [0.8, chapter_color], [1.0, chapter_color]], 
-        showscale=False, lighting=dict(ambient=0.95, diffuse=0.40, roughness=0.8, specular=0.0),
-        text=create_hover_text(row, chapter_num=idx+outer_count+1, matrix_shape=X.shape), hoverinfo='text'
-    ))
+# Render Pipeline Loop execution
+for tier_idx, tier in enumerate(tiers_to_render):
+    for idx in range(tier['count']):
+        if global_chapter_idx >= total_chapters:
+            break
+            
+        row = df.iloc[global_chapter_idx]
+        is_even = (idx % 2 == 0)
+        
+        # 1. Capture base shape geometry metrics calculations
+        X, Y, Z = generate_highly_defined_petal(
+            center_angle=tier['angles'][idx], 
+            length=row['scaled_length'] * tier['len_mult'], 
+            width_scale=row['scaled_width'] * tier['wid_mult'],
+            tip_curl=row['scaled_curl'], 
+            ripple_freq=row['ripple_freq'], 
+            tilt_angle=tier['tilt'], 
+            is_inner_tier=tier['is_inner'], 
+            micro_lift=(True if is_even else False), 
+            radial_offset=(0.14 if is_even else 0.0)
+        )
+        
+        # 2. Apply explicit structural lift overrides for the tri-tier configuration profile
+        if tier['lift_override'] is not None:
+            # Strip baseline function lift defaults to apply exact multi-ring elevations
+            Z = Z - (0.35 if tier['is_inner'] else 0.0) + tier['lift_override']
+            
+        chapter_color = get_sentiment_color(row['color_val'])
+        
+        # 3. Add surface trace configuration properties
+        fig.add_trace(go.Surface(
+            x=X, y=Y, z=Z, 
+            colorscale=[[0.0, "#ffffff"], [0.4, "#ffffff"], [0.8, chapter_color], [1.0, chapter_color]], 
+            showscale=False, 
+            lighting=dict(ambient=0.95, diffuse=0.40, roughness=0.8, specular=0.0),
+            text=create_hover_text(row, chapter_num=global_chapter_idx+1, matrix_shape=X.shape), 
+            hoverinfo='text'
+        ), row=1, col=1)
+        
+        global_chapter_idx += 1
 
-# Layout configurations
+# ==============================================================================
+# SUPPLEMENTARY 2D GRAPH PLOTS GENERATION (Rows 2-5)
+# ==============================================================================
+
+# Chart 1: Word Count (Row 2)
+fig.add_trace(go.Scatter(
+    x=df['chapter_index'], y=df['word_count'],
+    name="Word Count", fill='tozeroy',
+    line=dict(color='#c8b6ff', width=2),
+    fillcolor='rgba(200, 182, 255, 0.15)',
+    hovertemplate="Chapter %{x}<br>Words: %{y:,}<extra></extra>"
+), row=2, col=1)
+
+# Chart 2: Lexical Diversity (Row 3)
+fig.add_trace(go.Scatter(
+    x=df['chapter_index'], y=df['lexical_diversity'],
+    name="Lexical Diversity", mode='lines+markers',
+    line=dict(color='#fcb6cf', width=2),
+    marker=dict(size=5, color='#ffffff', line=dict(width=1.5, color='#fcb6cf')),
+    hovertemplate="Chapter %{x}<br>TTR: %{y:.3f}<extra></extra>"
+), row=3, col=1)
+
+# Chart 3: Sentiment Polarity Diverging Bar (Row 4)
+bar_colors = [get_sentiment_color(val) for val in df['color_val']]
+fig.add_trace(go.Bar(
+    x=df['chapter_index'], y=df['sentiment_polarity'],
+    name="Sentiment", marker_color=bar_colors,
+    hovertemplate="Chapter %{x}<br>Polarity: %{y:+.2f}<extra></extra>"
+), row=4, col=1)
+
+# Chart 4: Punctuation Volume Steps (Row 5)
+fig.add_trace(go.Scatter(
+    x=df['chapter_index'], y=df['punctuation_count'],
+    name="Punctuation Velocity", mode='lines+markers',
+    line=dict(color='#bde0fe', width=1.5, shape='hv', dash='dash'),
+    marker=dict(size=6, symbol='diamond', color='#bde0fe', line=dict(width=1, color='#b8c0ff')),
+    hovertemplate="Chapter %{x}<br>Marks: %{y}<extra></extra>"
+), row=5, col=1)
+
+
+# ==============================================================================
+# GLOBAL UNIFIED LAYOUT TRANSFORMS
+# ==============================================================================
 book_title = BOOK_ID.replace("_", " ").title()
-# Viewport formatting & Absolute Minimalist Grid Elimination
+
 fig.update_layout(
+    height=1200,  # Roomy layout height footprint for multi-tier stack navigation
+    paper_bgcolor='#ffffff',
+    plot_bgcolor='#ffffff',
+    margin=dict(l=60, r=40, b=40, t=50),
+    showlegend=False,
+    
+    # 3D Camera Scene Constants
     scene=dict(
-        # Explicitly turn off visibility, background panels, and grid grids for all three dimensions
         xaxis=dict(visible=False, showbackground=False, showgrid=False, zeroline=False),
         yaxis=dict(visible=False, showbackground=False, showgrid=False, zeroline=False),
         zaxis=dict(visible=False, showbackground=False, showgrid=False, zeroline=False),
-        aspectratio=dict(x=1, y=1, z=0.95),
-        camera=dict(
-            eye=dict(x=1.25, y=1.25, z=0.8)
-        )
+        aspectratio=dict(x=1, y=1, z=0.85),
+        camera=dict(eye=dict(x=1, y=1, z=1.4))
     ),
+    
+    # Text Titles Positioning
     annotations=[
-        dict(text=book_title, font=dict(size=26, family="serif", color="#0f172a", weight="bold"), showarrow=False, x=0.04, y=0.94, xref="paper", yref="paper", xanchor="left"),
-        dict(text="Narrative Informatics Blossom Topology", font=dict(size=12, family="monospace", color="#64748b"), showarrow=False, x=0.04, y=0.89, xref="paper", yref="paper", xanchor="left")
+        dict(text=book_title, font=dict(size=24, family="serif", color="#0f172a", weight="bold"), showarrow=False, x=0.02, y=0.99, xref="paper", yref="paper", xanchor="left"),
+        dict(text="Narrative Informatics Blossom Topology Workspace", font=dict(size=11, family="monospace", color="#64748b"), showarrow=False, x=0.02, y=0.96, xref="paper", yref="paper", xanchor="left")
     ],
+    
     hoverlabel=dict(
         bgcolor='#0f172a',      
         bordercolor='#334155',  
-        font=dict(color='#f8fafc', size=13, family='monospace') 
-    ),
-    paper_bgcolor='rgba(255,255,255,1)',
-    plot_bgcolor='rgba(255,255,255,1)',
-    margin=dict(l=40, r=40, b=20, t=20),
-    showlegend=False
+        font=dict(color='#f8fafc', size=12, family='monospace') 
+    )
 )
+
+# Clean, minimalist axes format configuration loop across rows 2-5
+for i in range(2, 6):
+    fig.update_xaxes(tickmode='linear', tick0=1, dtick=1, showgrid=True, gridcolor='#f1f5f9', tickfont=dict(size=9, family='monospace'), row=i, col=1)
+    fig.update_yaxes(showgrid=True, gridcolor='#f1f5f9', zeroline=True, zerolinecolor='#cbd5e1', tickfont=dict(size=9, family='monospace'), row=i, col=1)
+
+# Assign structural descriptive text strings onto individual Y margins
+fig.update_yaxes(title_text="Word Volume", title_font=dict(size=10, family="monospace", color="#64748b"), row=2, col=1)
+fig.update_yaxes(title_text="Lexical Diversity", title_font=dict(size=10, family="monospace", color="#64748b"), row=3, col=1)
+fig.update_yaxes(title_text="Sentiment Arc", title_font=dict(size=10, family="monospace", color="#64748b"), row=4, col=1)
+fig.update_yaxes(title_text="Punctuation Velocity", title_font=dict(size=10, family="monospace", color="#64748b"), row=5, col=1)
+
+# Overwrite X-axis label only on the bottom chart to prevent redundancy stacking
+fig.update_xaxes(title_text="Sequential Text Progress (Chapters)", title_font=dict(size=10, family="monospace", color="#64748b"), row=5, col=1)
 
 fig.show()
 fig.write_html(f"docs/assets/{BOOK_ID}_flower.html", full_html=False, include_plotlyjs='cdn')
-print(f"Successfully bloomed dynamic asset inside docs/assets/{BOOK_ID}_flower.html")
+print(f"Successfully bloomed unified workspace asset inside docs/assets/{BOOK_ID}_flower.html")
