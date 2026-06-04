@@ -13,13 +13,13 @@ def generate_highly_defined_petal(center_angle, length, width_scale, tip_curl, r
     
     # --- Concentric Layer Base Adjustments ---
     if is_inner_tier:
-        length *= 0.82       
-        width_scale *= 0.75  
+        length *= 1.00        # Changed from 0.82
+        width_scale *= 1.00   # Changed from 0.75
         lift = 0.35          
     else:
-        length *= 1.15       
-        width_scale *= 1.00
-        lift = 0.0           
+        length *= 1.00        # Changed from 1.15
+        width_scale *= 1.00   # Changed from 1.00
+        lift = 0.0          
     
     r = (length * U) + radial_offset 
     
@@ -153,7 +153,7 @@ def generate_stem_and_sepal():
 # ==============================================================================
 # CONFIGURATION & SUBPLOT SETUP
 # ==============================================================================
-BOOK_ID = "jekyll_and_hyde"  # Options: 'alice_in_wonderland', 'jekyll_and_hyde', etc.
+BOOK_ID = "peter_pan"  # Options: 'alice_in_wonderland', 'jekyll_and_hyde', etc.
 
 df = pd.read_csv(f'data/{BOOK_ID}_petals.csv')
 total_chapters = len(df)
@@ -213,57 +213,71 @@ fig.add_trace(go.Surface(x=X_sepal, y=Y_sepal, z=Z_sepal, colorscale=[[0, "#86a1
 add_stamen_cluster(fig, count=18, max_height=0.42)
 
 # ==============================================================================
-# DYNAMIC MULTI-TIER DISTRIBUTION ENGINE (Row 1)
+# UNIVERSAL GREEDY FIBONACCI LAYER ENGINE (Row 1)
 # ==============================================================================
-# Setup an array to hold all generated loops configurations
+# Strict Fibonacci tier capacities from the inside out
+FIB_SEQUENCE = [5, 8, 13, 21, 34]
+
+# Aesthetic physics presets mapped to each prospective layer index (0=Inner, 1=Mid, 2=Outer)
+TIER_PRESETS = [
+    {'tilt': -0.02, 'lift_override': 0.54, 'len_mult': 1.00, 'wid_mult': 1.00, 'is_inner': True},  # Inner Core
+    {'tilt': -0.08, 'lift_override': 0.28, 'len_mult': 1.00, 'wid_mult': 1.00, 'is_inner': True},  # Middle Ring
+    {'tilt': -0.18, 'lift_override': 0.0,  'len_mult': 1.00, 'wid_mult': 1.00,  'is_inner': False}  # Outer Rim
+]
+
 tiers_to_render = []
+chapters_allocated = 0
 
-if total_chapters > 20:
-    # 🌟 NEW RULE: Split into 3 Concentric Layers to minimize crowding
-    outer_count = total_chapters // 3
-    mid_count = total_chapters // 3
-    inner_count = total_chapters - (outer_count + mid_count)
+# Loop through our structural limits and allocate chapters greedily
+for tier_idx, max_capacity in enumerate(FIB_SEQUENCE):
+    if chapters_allocated >= total_chapters:
+        break
+        
+    # Determine how many chapters are left to map
+    remaining_chapters = total_chapters - chapters_allocated
     
-    # Stagger angular offsets to tuck petals naturally into lower-tier gaps
-    angles_outer = np.linspace(0, 2 * np.pi, outer_count, endpoint=False)
-    angles_mid = np.linspace(0, 2 * np.pi, mid_count, endpoint=False) + (np.pi / max(mid_count, 1))
-    angles_inner = np.linspace(0, 2 * np.pi, inner_count, endpoint=False) + (np.pi / max(inner_count, 1) * 0.5)
+    # Take either the full Fibonacci capacity or whatever remainder is left over
+    current_tier_count = min(max_capacity, remaining_chapters)
     
-    tiers_to_render = [
-        {'count': outer_count, 'angles': angles_outer, 'is_inner': False, 'tilt': -0.18, 'lift_override': 0.0,  'len_mult': 1.15, 'wid_mult': 1.0},
-        {'count': mid_count,   'angles': angles_mid,   'is_inner': True,  'tilt': -0.08, 'lift_override': 0.28, 'len_mult': 0.88, 'wid_mult': 0.85},
-        {'count': inner_count, 'angles': angles_inner, 'is_inner': True,  'tilt': -0.02, 'lift_override': 0.54, 'len_mult': 0.68, 'wid_mult': 0.70}
-    ]
-else:
-    # --- Fallback to original two-tier/one-tier logic for smaller texts ---
-    if total_chapters < 12:
-        outer_count = total_chapters
-        inner_count = 0
-    else:
-        outer_count = total_chapters // 2
-        inner_count = total_chapters - outer_count
-
-    angles_outer = np.linspace(0, 2 * np.pi, outer_count, endpoint=False)
-    angles_inner = np.linspace(0, 2 * np.pi, inner_count, endpoint=False) + (np.pi / max(inner_count, 1))
+    # Calculate uniform angular paths for this layer
+    # Stagger odd-numbered rings slightly to allow petals to interlock naturally
+    angular_offset = (np.pi / current_tier_count) if tier_idx % 2 != 0 else 0.0
+    angles = np.linspace(0, 2 * np.pi, current_tier_count, endpoint=False) + angular_offset
     
-    tiers_to_render = [
-        {'count': outer_count, 'angles': angles_outer, 'is_inner': False, 'tilt': -0.16, 'lift_override': None, 'len_mult': 1.0, 'wid_mult': 1.0},
-        {'count': inner_count, 'angles': angles_inner, 'is_inner': True,  'tilt': -0.04, 'lift_override': None, 'len_mult': 1.0, 'wid_mult': 1.0}
-    ]
+    # Grab the physics presets for this specific depth layer index
+    # Fall back to outer rim presets if a massive book forces an unexpected 4th tier
+    preset = TIER_PRESETS[tier_idx] if tier_idx < len(TIER_PRESETS) else TIER_PRESETS[-1]
+    
+    # Package configuration parameters for execution
+    tiers_to_render.append({
+        'count': current_tier_count,
+        'angles': angles,
+        'is_inner': preset['is_inner'],
+        'tilt': preset['tilt'],
+        'lift_override': preset['lift_override'],
+        'len_mult': preset['len_mult'],
+        'wid_mult': preset['wid_mult'],
+        'slice_start': chapters_allocated,
+        'slice_end': chapters_allocated + current_tier_count
+    })
+    
+    chapters_allocated += current_tier_count
 
-# Global tracer tracking rows sequentially across data tier limits
-global_chapter_idx = 0
-
-# Render Pipeline Loop execution
+# ==============================================================================
+# UNIFIED SURFACE RENDER LIFECYCLE LOOP
+# ==============================================================================
 for tier_idx, tier in enumerate(tiers_to_render):
+    tier_df = df.iloc[tier['slice_start']:tier['slice_end']]
+    
     for idx in range(tier['count']):
-        if global_chapter_idx >= total_chapters:
+        if idx >= len(tier_df):
             break
             
-        row = df.iloc[global_chapter_idx]
+        row = tier_df.iloc[idx]
         is_even = (idx % 2 == 0)
+        actual_chapter_num = int(row['chapter_index'])
         
-        # 1. Capture base shape geometry metrics calculations
+        # 1. Structural Mesh Generation
         X, Y, Z = generate_highly_defined_petal(
             center_angle=tier['angles'][idx], 
             length=row['scaled_length'] * tier['len_mult'], 
@@ -276,24 +290,21 @@ for tier_idx, tier in enumerate(tiers_to_render):
             radial_offset=(0.14 if is_even else 0.0)
         )
         
-        # 2. Apply explicit structural lift overrides for the tri-tier configuration profile
+        # 2. Physics Elevation Height Corrections
         if tier['lift_override'] is not None:
-            # Strip baseline function lift defaults to apply exact multi-ring elevations
             Z = Z - (0.35 if tier['is_inner'] else 0.0) + tier['lift_override']
             
         chapter_color = get_sentiment_color(row['color_val'])
         
-        # 3. Add surface trace configuration properties
+        # 3. Inject WebGL Tracer to Canvas
         fig.add_trace(go.Surface(
             x=X, y=Y, z=Z, 
             colorscale=[[0.0, "#ffffff"], [0.4, "#ffffff"], [0.8, chapter_color], [1.0, chapter_color]], 
             showscale=False, 
             lighting=dict(ambient=0.95, diffuse=0.40, roughness=0.8, specular=0.0),
-            text=create_hover_text(row, chapter_num=global_chapter_idx+1, matrix_shape=X.shape), 
+            text=create_hover_text(row, chapter_num=actual_chapter_num, matrix_shape=X.shape), 
             hoverinfo='text'
         ), row=1, col=1)
-        
-        global_chapter_idx += 1
 
 # ==============================================================================
 # SUPPLEMENTARY 2D GRAPH PLOTS GENERATION (Rows 2-5)
