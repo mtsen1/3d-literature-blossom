@@ -148,12 +148,15 @@ def generate_stem_and_sepal():
     Y_sepal = r_sepal * np.sin(THETA_sep)
     Z_sepal = 0.25 * (U_sep ** 2) 
     
+    LIFT_SEPAL_VAL = 0.05
+    Z_stem += LIFT_SEPAL_VAL
+    Z_sepal += LIFT_SEPAL_VAL
+    
     return X_stem, Y_stem, Z_stem, X_sepal, Y_sepal, Z_sepal
-
 # ==============================================================================
 # CONFIGURATION & SUBPLOT SETUP
 # ==============================================================================
-BOOK_ID = "peter_pan"  # Options: 'alice_in_wonderland', 'jekyll_and_hyde', etc.
+BOOK_ID = "the_secret_garden"  # Options: 'alice_in_wonderland', 'jekyll_and_hyde', etc.
 
 df = pd.read_csv(f'data/{BOOK_ID}_petals.csv')
 total_chapters = len(df)
