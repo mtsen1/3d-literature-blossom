@@ -17,3 +17,11 @@ The data topology engine maps programmatic literary dimensions directly to WebGL
 * **Petal Width: Lexical Diversity:** Flare thresholds represent a highly varied, unique vocabulary profile within the chapter.
 * **Petal Tip Curl: Sentiment Polarity:** Upward curling geometries reveal narrative optimism, while downward folding signals somber text boundaries.
 * **Edge Ripple: Punctuation Velocity:** High-frequency edge waves reveal heavy reliance on structural punctuation markers (commas, semi-colons, dialogue breaks).
+
+---
+## Data Sources & References
+
+* **Carroll, Lewis.** *Alice's Adventures in Wonderland* (1865). Source text curated by [Project Gutenberg eBook #11](https://www.gutenberg.org/ebooks/11).
+* **Barrie, J.M.** *Peter Pan : [Peter and Wendy]* (1911). Source text curated by [Project Gutenberg eBook #16](https://www.gutenberg.org/ebooks/16).
+* **Burnett, Frances Hodgson.** *The Secret Garden* (1911). Source text curated by [Project Gutenberg eBook #113](https://www.gutenberg.org/ebooks/113).
+* **Stevenson, Robert Louis.** *The Strange Case of Dr. Jekyll and Mr. Hyde* (1886). Source text curated by [Project Gutenberg eBook #43](https://www.gutenberg.org/ebooks/43)
